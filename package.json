@@ -1,0 +1,10 @@
+{
+  "name": "assistente-pessoal",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.0",
+    "@vercel/functions": "^3.9.0"
+  }
+}

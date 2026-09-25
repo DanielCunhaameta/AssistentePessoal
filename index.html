@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1e22">
+<title>Assistente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    --fundo: #1c1e22;
+    --painel: #25282d;
+    --linha: #34383f;
+    --texto: #ebe8e1;
+    --suave: #9da1a8;
+    --amarelo: #F5C433;
+    --alerta: #ef7a6a;
+    --ok: #7fc59a;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --titulo: "Oswald", "Arial Narrow", sans-serif;
+    --corpo: "Inter", system-ui, -apple-system, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { margin: 0; background: var(--fundo); color: var(--texto); }
+  body { font: 15px/1.5 var(--corpo); -webkit-font-smoothing: antialiased; }
+  main { max-width: 46rem; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  button, input { font: inherit; }
+  a { color: var(--amarelo); }
+  :focus-visible { outline: 2px solid var(--amarelo); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* Login */
+  .login { min-height: 80vh; display: grid; place-content: center; gap: 1.25rem; }
+  .login h1 { font: 500 2.6rem/1 var(--titulo); margin: 0; }
+  .login p { margin: 0; color: var(--suave); }
+  .login form { display: grid; gap: .6rem; width: min(20rem, 88vw); }
+  input {
+    background: var(--painel); color: var(--texto); border: 1px solid var(--linha);
+    border-radius: 6px; padding: .7rem .8rem;
+  }
+  .btn {
+    background: var(--amarelo); color: #1c1e22; border: 0; border-radius: 6px;
+    padding: .65rem 1rem; font-weight: 600; cursor: pointer;
+  }
+  .btn.sec { background: transparent; color: var(--texto); border: 1px solid var(--linha); font-weight: 500; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .erro { color: var(--alerta); min-height: 1.5em; font-size: .9rem; }
+
+  /* Cabeçalho */
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+  header h1 { font: 500 2.4rem/1 var(--titulo); margin: 0; letter-spacing: .01em; }
+  header .data { color: var(--suave); margin-top: .35rem; }
+  .ferramentas { display: flex; gap: .5rem; }
+  .status {
+    margin: 1.1rem 0 1.6rem; padding: .7rem .9rem; border-radius: 6px;
+    background: var(--painel); color: var(--suave); font-size: .9rem;
+    display: flex; gap: .75rem; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  }
+  .status b { color: var(--texto); font-weight: 500; }
+
+  /* Seções */
+  section { margin-bottom: 2rem; }
+  section > h2 {
+    font: 500 1.35rem/1.2 var(--titulo); margin: 0 0 .6rem;
+    display: flex; align-items: baseline; gap: .6rem;
+  }
+  section > h2 .n { font: 400 .95rem var(--mono); color: var(--suave); }
+  .vazio { color: var(--suave); font-size: .92rem; margin: 0; }
+
+  .item { border-top: 1px solid var(--linha); padding: .85rem 0 .9rem; }
+  .item:last-child { border-bottom: 1px solid var(--linha); }
+  #sec-acao .item { border-left: 3px solid var(--amarelo); padding-left: .85rem; }
+  .topo { display: flex; justify-content: space-between; gap: 1rem; color: var(--suave); font-size: .85rem; }
+  .topo .quem { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topo time { font-family: var(--mono); font-size: .8rem; flex: none; }
+  .assunto { font-weight: 600; margin: .15rem 0 .2rem; overflow-wrap: anywhere; }
+  .resumo { margin: 0; color: #cfccc5; }
+  .fazer { margin: .35rem 0 0; color: var(--amarelo); }
+  .meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem; }
+  .tag {
+    font: 400 .78rem/1 var(--mono); padding: .35rem .5rem; border-radius: 4px;
+    background: var(--painel); color: var(--suave);
+  }
+  .tag.venc { color: #1c1e22; background: var(--alerta); }
+  .tag.hoje { color: #1c1e22; background: var(--amarelo); }
+  .tag.obra { font-family: var(--corpo); }
+  .acoes { display: flex; gap: 1rem; margin-top: .6rem; font-size: .88rem; align-items: center; }
+  .acoes button { background: none; border: 0; padding: 0; color: var(--texto); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .item.feito { opacity: .5; }
+  .item.feito .assunto { text-decoration: line-through; }
+
+  details > summary { cursor: pointer; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary h2::after { content: "mostrar"; font: 400 .8rem var(--corpo); color: var(--suave); margin-left: auto; }
+  details[open] > summary h2::after { content: "ocultar"; }
+
+  .rodape { display: flex; justify-content: space-between; color: var(--suave); font-size: .85rem; }
+  .rodape label { display: flex; gap: .4rem; align-items: center; cursor: pointer; }
+
+  #aviso {
+    position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%); background: var(--texto); color: #1c1e22;
+    padding: .6rem 1rem; border-radius: 6px; font-size: .9rem; max-width: 90vw;
+  }
+  @media (max-width: 480px) {
+    header h1 { font-size: 2rem; }
+    .ferramentas .btn { padding: .55rem .75rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <!-- Login -->
+  <div class="login" id="tela-login" hidden>
+    <div>
+      <h1>Assistente</h1>
+      <p>Entre para ver sua triagem.</p>
+    </div>
+    <form id="form-login">
+      <input type="email" id="email" placeholder="E-mail" autocomplete="username" required>
+      <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" required>
+      <button class="btn" type="submit">Entrar</button>
+      <div class="erro" id="erro-login"></div>
+    </form>
+  </div>
+
+  <!-- Painel -->
+  <div id="tela-painel" hidden>
+    <header>
+      <div>
+        <h1>Triagem</h1>
+        <div class="data" id="hoje"></div>
+      </div>
+      <div class="ferramentas">
+        <button class="btn" id="bt-sync">Sincronizar</button>
+      </div>
+    </header>
+
+    <div class="status" id="status">Verificando conexão…</div>
+
+    <section id="sec-acao"><h2>Pede ação sua <span class="n"></span></h2><div class="lista"></div></section>
+    <section id="sec-acompanhar"><h2>Acompanhar <span class="n"></span></h2><div class="lista"></div></section>
+    <section id="sec-pessoal"><h2>Pessoal <span class="n"></span></h2><div class="lista"></div></section>
+    <section id="sec-rotina">
+      <details><summary><h2>Rotina <span class="n"></span></h2></summary><div class="lista"></div></details>
+    </section>
+
+    <div class="rodape">
+      <label><input type="checkbox" id="ver-feitos"> Mostrar concluídos</label>
+      <button class="btn sec" id="bt-sair">Sair</button>
+    </div>
+  </div>
+</main>
+<div id="aviso" hidden></div>
+
+<script>
+(async () => {
+  const $ = (s) => document.querySelector(s);
+  const TZ = 'America/Belem';
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function avisar(msg, ms = 3500) {
+    const el = $('#aviso'); el.textContent = msg; el.hidden = false;
+    clearTimeout(avisar.t); avisar.t = setTimeout(() => (el.hidden = true), ms);
+  }
+
+  const cfg = await fetch('/api/config').then((r) => r.json()).catch(() => null);
+  if (!cfg?.supabaseUrl || !cfg?.supabaseAnonKey) {
+    document.body.innerHTML = '<main><p class="erro">Configuração ausente: defina SUPABASE_URL e SUPABASE_ANON_KEY nas variáveis de ambiente do Vercel.</p></main>';
+    return;
+  }
+  const sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+  // ---------- datas ----------
+  const hojeISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+  $('#hoje').textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  function quando(iso) {
+    const d = new Date(iso);
+    const dia = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
+    const hora = new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(d);
+    if (dia === hojeISO()) return hora;
+    return new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit' }).format(d) + ' ' + hora;
+  }
+  function tagPrazo(p) {
+    if (!p) return '';
+    const h = hojeISO();
+    const txt = p.split('-').reverse().slice(0, 2).join('/');
+    if (p < h) return `<span class="tag venc">venceu ${txt}</span>`;
+    if (p === h) return `<span class="tag hoje">vence hoje</span>`;
+    return `<span class="tag">vence ${txt}</span>`;
+  }
+
+  // ---------- sessão ----------
+  async function iniciar() {
+    const { data: { session } } = await sb.auth.getSession();
+    $('#tela-login').hidden = !!session;
+    $('#tela-painel').hidden = !session;
+    if (session) { carregarStatus(); carregar(); escutar(); }
+  }
+
+  $('#form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('#erro-login').textContent = '';
+    const { error } = await sb.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#senha').value });
+    if (error) { $('#erro-login').textContent = 'E-mail ou senha incorretos.'; return; }
+    iniciar();
+  });
+  $('#bt-sair').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+  // ---------- status da conexão Microsoft ----------
+  async function carregarStatus() {
+    const el = $('#status');
+    const { data, error } = await sb.rpc('status_conexao');
+    if (error) { el.textContent = 'Não foi possível ler o status: ' + error.message; return; }
+    if (!data?.email) {
+      el.innerHTML = '<span>O Outlook ainda não está conectado.</span><button class="btn" id="bt-ms">Conectar Microsoft</button>';
+    } else {
+      const exp = data.assinatura_expira ? new Date(data.assinatura_expira) : null;
+      const ativo = exp && exp > new Date();
+      el.innerHTML = `<span>Outlook conectado como <b>${esc(data.email)}</b>. ${
+        ativo ? 'Recebendo e-mails em tempo real.' : 'O recebimento em tempo real está parado; reconecte.'}</span>
+        <button class="btn sec" id="bt-ms">Reconectar</button>`;
+    }
+    $('#bt-ms').addEventListener('click', () => (location.href = '/api/auth/login'));
+  }
+  if (new URLSearchParams(location.search).has('conectado')) {
+    history.replaceState(null, '', '/');
+    setTimeout(() => avisar('Outlook conectado. Clique em Sincronizar para trazer os últimos dias.', 6000), 400);
+  }
+
+  // ---------- itens ----------
+  async function carregar() {
+    const verFeitos = $('#ver-feitos').checked;
+    let q = sb.from('itens').select('*').order('recebido_em', { ascending: false }).limit(300);
+    q = verFeitos
+      ? q.in('status', ['aberto', 'feito']).gte('recebido_em', new Date(Date.now() - 14 * 864e5).toISOString())
+      : q.eq('status', 'aberto');
+    const { data, error } = await q;
+    if (error) { avisar('Erro ao carregar: ' + error.message); return; }
+
+    const grupos = { acao: [], acompanhar: [], pessoal: [], rotina: [] };
+    for (const i of data) (grupos[i.categoria] || grupos.acompanhar).push(i);
+    grupos.acao.sort((a, b) => (a.prazo || '9999') .localeCompare(b.prazo || '9999') || b.recebido_em.localeCompare(a.recebido_em));
+
+    const vazios = {
+      acao: 'Nada pedindo ação sua agora.',
+      acompanhar: 'Nenhum assunto em andamento.',
+      pessoal: 'Nada pessoal pendente.',
+      rotina: 'Nenhuma mensagem de rotina.'
+    };
+    for (const [cat, lista] of Object.entries(grupos)) {
+      const sec = $('#sec-' + cat);
+      sec.querySelector('.n').textContent = lista.length;
+      sec.querySelector('.lista').innerHTML = lista.length
+        ? lista.map(render).join('')
+        : `<p class="vazio">${vazios[cat]}</p>`;
+    }
+  }
+
+  function render(i) {
+    const pedidos = (i.pedidos || []).map((p) => `<span class="tag">pedido ${esc(p)}</span>`).join('');
+    const feito = i.status === 'feito';
+    return `<article class="item${feito ? ' feito' : ''}" data-id="${i.id}">
+      <div class="topo"><span class="quem">${esc(i.remetente_nome || i.remetente_email)}${i.destino === 'copia' ? ' (você em cópia)' : ''}</span><time>${quando(i.recebido_em)}</time></div>
+      <div class="assunto">${esc(i.assunto || '(sem assunto)')}</div>
+      ${i.resumo ? `<p class="resumo">${esc(i.resumo)}</p>` : ''}
+      ${i.acao && !feito ? `<p class="fazer">${esc(i.acao)}</p>` : ''}
+      <div class="meta">${tagPrazo(i.prazo)}${pedidos}${i.obra ? `<span class="tag obra">${esc(i.obra)}</span>` : ''}</div>
+      <div class="acoes">
+        ${i.link ? `<a href="${esc(i.link)}" target="_blank" rel="noopener">Abrir no Outlook</a>` : ''}
+        <button data-acao="${feito ? 'reabrir' : 'concluir'}">${feito ? 'Reabrir' : 'Concluir'}</button>
+        ${feito ? '' : '<button data-acao="arquivar">Arquivar</button>'}
+      </div>
+    </article>`;
+  }
+
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-acao]');
+    if (!b) return;
+    const id = b.closest('.item').dataset.id;
+    const mapa = {
+      concluir: { status: 'feito', concluido_em: new Date().toISOString(), msg: 'Concluído.' },
+      reabrir: { status: 'aberto', concluido_em: null, msg: 'Reaberto.' },
+      arquivar: { status: 'arquivado', concluido_em: null, msg: 'Arquivado.' }
+    };
+    const { msg, ...campos } = mapa[b.dataset.acao];
+    b.disabled = true;
+    const { error } = await sb.from('itens').update(campos).eq('id', id);
+    if (error) { avisar('Não foi possível salvar: ' + error.message); b.disabled = false; return; }
+    avisar(msg, 1800);
+    carregar();
+  });
+  $('#ver-feitos').addEventListener('change', carregar);
+
+  // ---------- sincronizar ----------
+  $('#bt-sync').addEventListener('click', async (e) => {
+    const bt = e.currentTarget; bt.disabled = true; bt.textContent = 'Sincronizando…';
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const r = await fetch('/api/sincronizar?horas=72', { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token } });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.erro || r.status);
+      avisar(j.novos
+        ? `${j.processados} de ${j.novos} e-mails novos organizados.${j.pendentes ? ' Clique de novo para continuar.' : ''}`
+        : 'Tudo em dia, nenhum e-mail novo.', 5000);
+      carregar(); carregarStatus();
+    } catch (err) {
+      avisar('Falha ao sincronizar: ' + err.message, 6000);
+    } finally {
+      bt.disabled = false; bt.textContent = 'Sincronizar';
+    }
+  });
+
+  // ---------- tempo real ----------
+  let canal;
+  function escutar() {
+    if (canal) return;
+    canal = sb.channel('itens')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'itens' }, (p) => {
+        if (p.new?.categoria === 'acao') avisar('Novo pedido de ação: ' + (p.new.assunto || ''));
+        carregar();
+      })
+      .subscribe();
+  }
+
+  iniciar();
+})();
+</script>
+</body>
+</html>

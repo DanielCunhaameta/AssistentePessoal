@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/**/*.js": { "maxDuration": 60 },
+    "api/cron/diario.js": { "maxDuration": 300 },
+    "api/sincronizar.js": { "maxDuration": 300 }
+  },
+  "crons": [
+    { "path": "/api/cron/diario", "schedule": "0 9 * * *" }
+  ]
+}
