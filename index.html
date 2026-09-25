@@ -1140,7 +1140,7 @@ function renderEntrada(){
     <div class="tbl-wrap" style="margin-top:18px"><table><thead><tr><th>Código</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Custo un.</th><th class="num">Total</th><th></th></tr></thead><tbody id="nfBody"></tbody></table></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
       <div style="font-size:13px;color:#8a8377">Total: <b id="nfTotal" class="mono" style="color:#1c1c1c;font-size:16px">R$ 0,00</b></div>
-      <div style="display:flex;gap:10px"><button class="btn ghost" onclick="cancelarNf()">✕ Cancelar inserção</button><button class="btn primary" onclick="processNf()">✓ Dar entrada no estoque</button></div>
+      <button class="btn primary" onclick="processNf()">✓ Dar entrada no estoque</button>
     </div>
   </div>
   <div class="sechead" style="margin-top:24px"><h3>Histórico de notas importadas</h3><span id="nfHistResumo" style="font-size:12.5px;color:#8a8377"></span></div>
@@ -1301,15 +1301,6 @@ function drawVincSalvos(){ const v=state.vinculosNF||{}; const q=normTxt(($('#vs
   $('#vsList').innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Fornecedor / item na NF</th><th>Insumo no estoque</th><th class="num">Fator</th><th></th></tr></thead><tbody>`+vsKeys.map((k,j)=>{ const r=v[k]; const p=findProduct(r.code);
     return `<tr><td>${esc(r.xProd||'')}<br><span class="muted" style="font-size:11px">${esc(r.forn||k.split('|')[0])} · cód. <span class="mono">${esc(k.split('|')[1])}</span></span></td><td>${p?esc(p.desc):'<span class="neg">produto excluído</span>'}<br><span class="muted mono" style="font-size:11px">${esc(r.code)}</span></td><td class="num">${numf(r.fator||1)}</td><td class="num"><button class="btn danger sm" title="Remover vínculo" onclick="delVincSalvo(${j})">✕</button></td></tr>`; }).join('')+`</tbody></table></div>`; }
 function delVincSalvo(j){ const k=vsKeys[j]; if(!k||!state.vinculosNF)return; delete state.vinculosNF[k]; save('Vínculo de insumo removido'); drawVincSalvos(); toast('Vínculo removido.','ok'); }
-/* Cancela a inserção em andamento: descarta itens e limpa os dados da nota (nada é gravado) */
-function cancelarNf(ok){
-  const temDados=nfItems.length||['nfNum','nfForn','nfCnpjTom','nfCnpjEmit'].some(id=>$('#'+id)&&$('#'+id).value.trim());
-  if(!temDados){ toast('Não há nota em inserção para cancelar.','warn'); return; }
-  if(!ok){ modal(`<h3>Cancelar inserção da nota?</h3><p class="mp">Os ${nfItems.length} item(ns) carregado(s) e os dados da nota serão descartados. Nada foi lançado no estoque.</p><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" onclick="closeModal()">Voltar</button><button class="btn danger" onclick="closeModal();cancelarNf(true)">Sim, cancelar</button></div>`); return; }
-  nfItems=[]; ['nfNum','nfForn','nfCnpjTom','nfCnpjEmit'].forEach(id=>{ if($('#'+id))$('#'+id).value=''; });
-  if($('#nfData'))$('#nfData').value=new Date().toISOString().slice(0,10);
-  if($('#xmlFile'))$('#xmlFile').value='';
-  drawNfItems(); toast('Inserção da nota cancelada.','ok'); }
 function addNfItem(){ const desc=$('#itDesc').value.trim(); const qty=parseFloat($('#itQty').value);
   if(!desc){toast('Informe a descrição.','err');return;} if(!(qty>0)){toast('Quantidade inválida.','err');return;}
   const refTxt=($('#itRef')?$('#itRef').value.trim():''); const aplicId=($('#itAplic')&&$('#itAplic').value)?$('#itAplic').value:'';
